@@ -3,7 +3,7 @@ from django.db import models
 
 
 class User(AbstractUser):
-    admin = 'admin'    
+    admin = 'admin'
     user = 'user'
     moderator = 'moderator'
     Roles = [

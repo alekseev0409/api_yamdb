@@ -8,6 +8,7 @@ class Category(models.Model):
                             default=None)
     slug = models.SlugField(max_length=128,
                             unique=True)
+
     class Meta:
         ordering = ['id']
 
@@ -20,12 +21,13 @@ class Genre(models.Model):
                             default=None)
     slug = models.SlugField(max_length=128,
                             unique=True)
+
     class Meta:
         ordering = ['id']
 
     def __str__(self) -> str:
         return self.name
-    
+
 
 class Title(models.Model):
     name = models.CharField(
@@ -52,7 +54,8 @@ class Title(models.Model):
 
     def __str__(self) -> str:
         return self.name
-    
+
+
 class Review(models.Model):
     text = models.TextField()
     author = models.ForeignKey(
@@ -80,6 +83,7 @@ class Review(models.Model):
 
     def __str__(self) -> str:
         return self.text
+
 
 class Comment(models.Model):
     author = models.ForeignKey(
