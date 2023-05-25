@@ -11,7 +11,7 @@ class User(AbstractUser):
         (user, 'user'),
         (moderator, 'moderator'),
     ]
-    
+
     bio = models.TextField(blank=True)
 
     role = models.CharField(
@@ -32,4 +32,3 @@ class User(AbstractUser):
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-

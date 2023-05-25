@@ -2,15 +2,39 @@ from rest_framework.generics import CreateAPIView
 from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .serializers import TokenSerializer, UserSerializer, SignUpSerializer
+from rest_framework.pagination import PageNumberPagination
+from django.db.models import Avg
+from .serializers import (TokenSerializer,
+                          UserSerializer,
+                          SignUpSerializer,
+                          CategorySerializer,
+                          CommentSerializer,
+                          GenreSerializer,
+                          ReviewSerializer,
+                          TitleCreateSerializer,
+                          TitleReadSerializer)
+from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from .utils import create_token, new_code, send_message
 from rest_framework import (viewsets, filters, permissions, filters,)
 from .permissions import IsOwnerOrReader, IsAdmin
 from rest_framework.pagination import LimitOffsetPagination
+from reviews.models import Category, Genre, Review, Title
 
 User = get_user_model()
+
+from rest_framework import mixins, viewsets
+
+#Я выносил это в отдельный файл когда делал 9ый спринт 
+class ListCreateDestroyMixin(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet
+):
+    pass
+
 
 class TokenView(CreateAPIView):
     permission_classes = (permissions.AllowAny,)
@@ -68,6 +92,35 @@ class SignUpView(CreateAPIView):
         send_message(name, confirmation_code, email)
         serializer.save(confirmation_code=confirmation_code)
         return Response(serializer.data)
-    
 
-    
+class CategoryViewSet(ListCreateDestroyMixin):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsAdmin, ]
+    filter_backends = [filters.SearchFilter, ]
+    search_fields = ['name', ]
+    lookup_field = 'slug'
+    pagination_class = PageNumberPagination
+
+class GenreViewSet(ListCreateDestroyMixin):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    permission_classes = [IsAdmin, ]
+    filter_backends = [filters.SearchFilter, ]
+    search_fields = ['name', ]
+    lookup_field = 'slug'
+    pagination_class = PageNumberPagination
+
+class TitleViewSet(viewsets.ModelViewSet):
+    queryset = Title.objects.order_by('id').annotate(
+        rating=Avg('reviews__score')
+    )
+    serializer_class = TitleCreateSerializer
+    permission_classes = [IsAdmin, ]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend]
+    pagination_class = PageNumberPagination
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return TitleCreateSerializer
+        return TitleReadSerializer
