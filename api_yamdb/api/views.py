@@ -19,24 +19,14 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from .utils import create_token, new_code, send_message
 from rest_framework import (viewsets, filters, permissions, filters,)
-from .permissions import IsOwnerOrReader, IsAdmin
+from .permissions import IsOwnerOrReader, IsAdmin, IsOwnerOrAdminOrReadOnly
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.pagination import LimitOffsetPagination
 from reviews.models import Category, Genre, Review, Title
+from .mixins import ModelMixinSet
 
+from rest_framework import viewsets
 User = get_user_model()
-
-from rest_framework import mixins, viewsets
-
-
-class ListCreateDestroyMixin(
-    mixins.ListModelMixin,
-    mixins.CreateModelMixin,
-    mixins.DestroyModelMixin,
-    viewsets.GenericViewSet
-):
-    pass
-
 
 class TokenView(CreateAPIView):
     permission_classes = (permissions.AllowAny,)
@@ -95,7 +85,7 @@ class SignUpView(CreateAPIView):
         return Response(serializer.data)
 
 
-class CategoryViewSet(ListCreateDestroyMixin):
+class CategoryViewSet(ModelMixinSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAdmin, ]
@@ -105,7 +95,7 @@ class CategoryViewSet(ListCreateDestroyMixin):
     pagination_class = PageNumberPagination
 
 
-class GenreViewSet(ListCreateDestroyMixin):
+class GenreViewSet(ModelMixinSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = [IsAdmin, ]
@@ -154,7 +144,5 @@ class CommentViewSet(viewsets.ModelViewSet):
         return review.comments.all()
 
     def perform_create(self, serializer):
-        title_id = self.kwargs.get('title_id')
-        review_id = self.kwargs.get('review_id')
-        review = get_object_or_404(Review, id=review_id, title=title_id)
+        review = get_object_or_404(Review, id=self.kwargs.get("review_id"))
         serializer.save(author=self.request.user, review=review)
