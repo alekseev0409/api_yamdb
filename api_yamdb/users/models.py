@@ -32,3 +32,11 @@ class User(AbstractUser):
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
+    
+    @property
+    def is_admin(self):
+        return self.is_staff or self.role == User.admin
+
+    @property
+    def is_moderator(self):
+        return self.role == User.moderator

@@ -6,12 +6,12 @@ from reviews.models import Category, Comment, Genre, Review, Title
 User = get_user_model()
 
 class TokenSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(max_length=150)
-
+    username = serializers.CharField(required=True)
+    confirmation_code = serializers.CharField(required=True)
 
     class Meta:
         model = User
-        fields = ['username']
+        fields = ('username', 'confirmation_code')
 
     def validate(self, data):
         user = get_object_or_404(User, username=data['username'])
