@@ -13,13 +13,15 @@ from .serializers import (TokenSerializer,
                           GenreSerializer,
                           ReviewSerializer,
                           TitleCreateSerializer,
-                          TitleReadSerializer)
+                          TitleReadSerializer,
+                          TitleWriteSerializer,
+                          UserCreateSerializer)
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from .utils import create_token, new_code, send_message
 from rest_framework import (viewsets, filters, permissions, filters,status)
-from .permissions import IsOwnerOrReader, IsAdmin, IsOwnerOrAdminOrReadOnly, IsModerator
+from .permissions import IsOwnerOrReader, IsAdmin,  IsModerator, IsAdminUserOrReadOnly, IsAdminPermission
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
 from rest_framework.pagination import LimitOffsetPagination
 from reviews.models import Category, Genre, Review, Title
@@ -32,11 +34,8 @@ from django.contrib.auth.tokens import default_token_generator
 from api.filters import TitleFilter
 User = get_user_model()
 
+
 class TokenView(APIView):
-    '''
-    POST-запрос с username и confirmation_code
-    возвращает JWT-токен.
-    '''
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
@@ -54,30 +53,26 @@ class TokenView(APIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAdmin,)
+    permission_classes = (IsAdminPermission,)
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('username',)
     lookup_field = 'username'
+    search_fields = ('username',)
+    http_method_names = ['get', 'post', 'patch', 'delete']
     pagination_class = LimitOffsetPagination
 
-    @action(
-        detail=False,
-        methods=['get', 'patch'],
-        url_path='me',
-        permission_classes=[permissions.IsAuthenticated, IsOwnerOrReader],
-    )
-    def get_my_profile(self, request):
-        if request.method == 'GET':
-            serializer = self.get_serializer(self.request.user)
-            return Response(serializer.data)
-        serializer = self.get_serializer(
-            self.request.user,
-            data=request.data,
-            partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save(role=self.request.user.role)
-        return Response(serializer.data)
+    @action(detail=False, methods=['get', 'patch'], url_path='me',
+            url_name='me', permission_classes=(permissions.IsAuthenticated,))
+    def about_me(self, request):
+        if request.method == 'PATCH':
+            serializer = UserCreateSerializer(
+                request.user, data=request.data,
+                partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save(role=request.user.role)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        serializer = UserCreateSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class SignUpView(CreateAPIView):
@@ -96,16 +91,14 @@ class SignUpView(CreateAPIView):
 
 
 class CategoryViewSet(ModelMixinSet):
+    """Получить список всех категорий без токена."""
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = (IsAdminUserOrReadOnly,)
+    filter_backends = (filters.SearchFilter, )
+    search_fields = ('name', )
     lookup_field = 'slug'
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
-
-    def get_permissions(self):
-        if self.action == 'list':
-            return (AllowAny(),)
-        return (IsAdmin(),)
+    pagination_class = LimitOffsetPagination
 
 
 class GenreViewSet(ModelMixinSet):
@@ -119,16 +112,17 @@ class GenreViewSet(ModelMixinSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.annotate(
-        rating=Avg('reviews__score')).all()
-    serializer_class = TitleCreateSerializer
-    filter_backends = (DjangoFilterBackend,)
+    """Получить список всех объектов без токена."""
+    queryset = Title.objects.all()
+    permission_classes = (IsAdminUserOrReadOnly,)
+    filter_backends = (DjangoFilterBackend, )
     filterset_class = TitleFilter
+    pagination_class = LimitOffsetPagination
 
-    def get_permissions(self):
-        if self.action == 'list' or self.action == 'retrieve':
-            return (AllowAny(),)
-        return (IsAdmin(),)
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return TitleReadSerializer
+        return TitleWriteSerializer
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer

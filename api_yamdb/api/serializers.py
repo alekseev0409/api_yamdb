@@ -30,6 +30,34 @@ class UserSerializer(serializers.ModelSerializer):
             'role',
         ]
 
+class UserCreateSerializer(serializers.ModelSerializer):
+    username = serializers.RegexField(
+        regex=r'^[\w.@+-]+$',
+        max_length=150,
+        required=True
+    )
+
+    email = serializers.EmailField(
+        max_length=254,
+        required=True,
+    )
+
+    class Meta:
+        model = User
+        fields = ('username',
+                  'email',
+                  'first_name',
+                  'last_name',
+                  'bio',
+                  'role')
+
+    def validate_username(self, value):
+        if value == 'me':
+            raise serializers.ValidationError(
+                'Имя пользователя "me" запрещено.'
+            )
+        return value
+
 
 class SignUpSerializer(serializers.ModelSerializer):
     class Meta:
@@ -89,6 +117,20 @@ class TitleReadSerializer(serializers.ModelSerializer):
         model = Title
         fields = '__all__'
 
+class TitleWriteSerializer(serializers.ModelSerializer):
+    category = serializers.SlugRelatedField(
+        queryset=Category.objects.all(),
+        slug_field='slug'
+    )
+    genre = serializers.SlugRelatedField(
+        queryset=Genre.objects.all(),
+        slug_field='slug',
+        many=True
+    )
+
+    class Meta:
+        fields = '__all__'
+        model = Title
 
 class ReviewSerializer(serializers.ModelSerializer):
 
