@@ -1,9 +1,10 @@
-from rest_framework import serializers
+from rest_framework import serializers, status
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from reviews.models import Category, Comment, Genre, Review, Title
 
 User = get_user_model()
+
 
 class TokenSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True)
@@ -29,6 +30,7 @@ class UserSerializer(serializers.ModelSerializer):
             'bio',
             'role',
         ]
+
 
 class UserCreateSerializer(serializers.ModelSerializer):
     username = serializers.RegexField(
@@ -64,15 +66,15 @@ class SignUpSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'username']
 
-        def validate(self, data):
-            if data['username'] == 'me':
+        def validate(self, username):
+            if username == 'me':
                 raise serializers.ValidationError(
                     'Username unavailable'
                 )
-            return data
-        
-class CategorySerializer(serializers.ModelSerializer):
+            return username
 
+
+class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('name', 'slug')
         model = Category
@@ -84,6 +86,7 @@ class GenreSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('name', 'slug')
         model = Genre
+
 
 class TitleCreateSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(
@@ -117,6 +120,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
         model = Title
         fields = '__all__'
 
+
 class TitleWriteSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(),
@@ -132,6 +136,7 @@ class TitleWriteSerializer(serializers.ModelSerializer):
         fields = '__all__'
         model = Title
 
+
 class ReviewSerializer(serializers.ModelSerializer):
 
     title = serializers.SlugRelatedField(
@@ -144,12 +149,9 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
-    class Meta:
-        fields = ('id', 'text', 'author', 'score', 'pub_date', 'title')
-        model = Review
-
     def validate(self, data):
         request = self.context.get('request')
+        score = data['score']
         if request.method == 'POST':
             review = Review.objects.filter(
                 title=self.context['view'].kwargs.get('title_id'),
@@ -159,7 +161,13 @@ class ReviewSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Отзыв уже существует'
                 )
+            if 0 > score > 10:
+                raise serializers.ValidationError('Оценка меньше 0 или больше 10')
         return data
+
+    class Meta:
+        fields = ('id', 'text', 'author', 'score', 'pub_date', 'title')
+        model = Review
 
 
 class CommentSerializer(serializers.ModelSerializer):

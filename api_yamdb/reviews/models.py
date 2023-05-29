@@ -6,7 +6,7 @@ from users.models import User
 class Category(models.Model):
     name = models.CharField(max_length=128,
                             default=None)
-    slug = models.SlugField(max_length=128,
+    slug = models.SlugField(max_length=50,
                             unique=True)
 
     class Meta:
@@ -19,7 +19,7 @@ class Category(models.Model):
 class Genre(models.Model):
     name = models.CharField(max_length=128,
                             default=None)
-    slug = models.SlugField(max_length=128,
+    slug = models.SlugField(max_length=50,
                             unique=True)
 
     class Meta:
@@ -50,7 +50,7 @@ class Title(models.Model):
     )
 
     class Meta:
-        ordering = ['id']
+        ordering = ['name']
 
     def __str__(self) -> str:
         return self.name

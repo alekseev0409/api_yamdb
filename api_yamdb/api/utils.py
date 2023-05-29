@@ -14,6 +14,7 @@ def create_token(user):
 def new_code():
     return str(uuid.uuid4())[0:16]
 
+
 def send_message(username, code, email):
     send_mail(
         'Регистрация',
