@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (TokenView, UserViewSet, SignUpView,
                     CategoryViewSet, GenreViewSet, TitleViewSet,
                     ReviewViewSet, CommentViewSet,
-                    UserViewSet)
+                    UserViewSet, RatingViewSet)
 
 router = DefaultRouter()
 router.register(r'categories', CategoryViewSet)

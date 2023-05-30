@@ -84,8 +84,12 @@ class SignUpView(APIView):
     def post(self, request, *args, **kwargs):
         user = None
         if 'username' in request.data:
+<<<<<<< HEAD
             user = User.objects.filter(
                 username=request.data["username"]).first()
+=======
+            user = User.objects.filter(username=request.data["username"]).first()
+>>>>>>> e0852a7d5a57f107e6b992a7c90e2821258274de
         if not user:
             serializer = SignUpSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -124,6 +128,7 @@ class GenreViewSet(ModelMixinSet):
 
 class RatingViewSet(ModelMixinSet):
     queryset = Title.objects.all().annotate(
+<<<<<<< HEAD
         Avg("reviews__score")).order_by("name")
     serializer_class = TitleCreateSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
@@ -140,6 +145,9 @@ class TitleViewSet(viewsets.ModelViewSet):
     """Получить список всех объектов без токена."""
     queryset = Title.objects.all().annotate(
         Avg("reviews__score")).order_by("name")
+=======
+        Avg("reviews__score") ).order_by("name")
+>>>>>>> e0852a7d5a57f107e6b992a7c90e2821258274de
     serializer_class = TitleCreateSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
     filter_backends = [DjangoFilterBackend]
@@ -150,6 +158,19 @@ class TitleViewSet(viewsets.ModelViewSet):
             return TitleReadSerializer
         return TitleWriteSerializer
 
+
+class TitleViewSet(viewsets.ModelViewSet):
+    """Получить список всех объектов без токена."""
+    queryset = Title.objects.all().annotate(Avg("reviews__score") ).order_by("name")
+    serializer_class = TitleCreateSerializer
+    permission_classes = (IsAdminUserOrReadOnly,)
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TitleFilter
+
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return TitleReadSerializer
+        return TitleWriteSerializer
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
