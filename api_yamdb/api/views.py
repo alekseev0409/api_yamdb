@@ -76,18 +76,26 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class SignUpView(CreateAPIView):
+class SignUpView(APIView):
     permission_classes = (permissions.AllowAny,)
     serializer_class = SignUpSerializer
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data['email']
-        name = serializer.validated_data['username']
-        confirmation_code = new_code()
-        send_message(name, confirmation_code, email)
-        serializer.save(confirmation_code=confirmation_code)
+    def post(self, request, *args, **kwargs):
+        user = None
+        if 'username' in request.data:
+            user = User.objects.filter(username=request.data["username"]).first()
+        if not user:
+            serializer = SignUpSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            email = serializer.validated_data['email']
+            name = serializer.validated_data['username']
+            confirmation_code = new_code()
+            send_message(name, confirmation_code, email)
+            serializer.save(confirmation_code=confirmation_code)
+            return Response(serializer.data)
+        if user.email != request.data['email']:
+            return Response(status=400)
+        serializer = UserSerializer()
         return Response(serializer.data)
 
 
@@ -112,19 +120,32 @@ class GenreViewSet(ModelMixinSet):
     pagination_class = PageNumberPagination
 
 
-class TitleViewSet(viewsets.ModelViewSet):
-    """Получить список всех объектов без токена."""
-    queryset = Title.objects.all()
+class RatingViewSet(ModelMixinSet):
+    queryset = Title.objects.all().annotate(
+        Avg("reviews__score") ).order_by("name")
+    serializer_class = TitleCreateSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
-    filter_backends = (DjangoFilterBackend, )
+    filter_backends = [DjangoFilterBackend]
     filterset_class = TitleFilter
-    pagination_class = LimitOffsetPagination
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return TitleReadSerializer
         return TitleWriteSerializer
 
+
+class TitleViewSet(viewsets.ModelViewSet):
+    """Получить список всех объектов без токена."""
+    queryset = Title.objects.all().annotate(Avg("reviews__score") ).order_by("name")
+    serializer_class = TitleCreateSerializer
+    permission_classes = (IsAdminUserOrReadOnly,)
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TitleFilter
+
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return TitleReadSerializer
+        return TitleWriteSerializer
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer

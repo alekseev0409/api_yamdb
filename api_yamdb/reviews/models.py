@@ -69,7 +69,7 @@ class Review(models.Model):
         on_delete=models.CASCADE,
         related_name='reviews'
     )
-    score = models.IntegerField(validators=[MinValueValidator(1),
+    score = models.IntegerField(default=0, validators=[MinValueValidator(1),
                                 MaxValueValidator(10)])
 
     class Meta:
