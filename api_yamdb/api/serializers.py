@@ -1,7 +1,10 @@
-from rest_framework import serializers, status
+from rest_framework import serializers
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from reviews.models import Category, Comment, Genre, Review, Title
+from django.core.validators import MaxValueValidator, MinValueValidator
+from rest_framework.serializers import IntegerField
+
 
 User = get_user_model()
 
@@ -15,7 +18,7 @@ class TokenSerializer(serializers.ModelSerializer):
         fields = ('username', 'confirmation_code')
 
     def validate(self, data):
-        user = get_object_or_404(User, username=data['username'])
+        get_object_or_404(User, username=data['username'])
         return data
 
 
@@ -66,12 +69,12 @@ class SignUpSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'username']
 
-        def validate(self, username):
-            if username == 'me':
-                raise serializers.ValidationError(
-                    'Username unavailable'
-                )
-            return username
+    def validate_username(self, value):
+        if value == 'me':
+            raise serializers.ValidationError(
+                'Имя пользователя "me" запрещено.'
+            )
+        return value
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -113,7 +116,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
         many=True
     )
     rating = serializers.IntegerField(
-        read_only=True,
+        source='reviews__score__avg', read_only=True
     )
 
     class Meta:
@@ -149,6 +152,10 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    score = IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(10)]
+    )
+
     def validate(self, data):
         request = self.context.get('request')
         score = data['score']
@@ -162,7 +169,8 @@ class ReviewSerializer(serializers.ModelSerializer):
                     'Отзыв уже существует'
                 )
             if 0 > score > 10:
-                raise serializers.ValidationError('Оценка меньше 0 или больше 10')
+                raise serializers.ValidationError(
+                    'Оценка меньше 0 или больше 10')
         return data
 
     class Meta:

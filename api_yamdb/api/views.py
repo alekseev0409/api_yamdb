@@ -1,8 +1,7 @@
-from rest_framework.generics import CreateAPIView
 from rest_framework import permissions
 from django.db.models import Avg
 from rest_framework.response import Response
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Avg
 from .serializers import (TokenSerializer,
@@ -19,10 +18,12 @@ from .serializers import (TokenSerializer,
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
-from .utils import create_token, new_code, send_message
-from rest_framework import (viewsets, filters, permissions, filters,status)
-from .permissions import IsOwnerOrReader, IsAdmin,  IsModerator, IsAdminUserOrReadOnly, IsAdminPermission
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
+from .utils import new_code, send_message
+from rest_framework import (viewsets, filters, permissions, filters, status)
+from .permissions import (IsModerator,
+                          IsAdminUserOrReadOnly,
+                          IsAdminPermission)
+from rest_framework.permissions import AllowAny
 from rest_framework.pagination import LimitOffsetPagination
 from reviews.models import Category, Genre, Review, Title
 from .mixins import ModelMixinSet
@@ -76,18 +77,27 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class SignUpView(CreateAPIView):
+class SignUpView(APIView):
     permission_classes = (permissions.AllowAny,)
     serializer_class = SignUpSerializer
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data['email']
-        name = serializer.validated_data['username']
-        confirmation_code = new_code()
-        send_message(name, confirmation_code, email)
-        serializer.save(confirmation_code=confirmation_code)
+    def post(self, request, *args, **kwargs):
+        user = None
+        if 'username' in request.data:
+            user = User.objects.filter(
+                username=request.data["username"]).first()
+        if not user:
+            serializer = SignUpSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            email = serializer.validated_data['email']
+            name = serializer.validated_data['username']
+            confirmation_code = new_code()
+            send_message(name, confirmation_code, email)
+            serializer.save(confirmation_code=confirmation_code)
+            return Response(serializer.data)
+        if user.email != request.data['email']:
+            return Response(status=400)
+        serializer = UserSerializer()
         return Response(serializer.data)
 
 
@@ -112,13 +122,28 @@ class GenreViewSet(ModelMixinSet):
     pagination_class = PageNumberPagination
 
 
+class RatingViewSet(ModelMixinSet):
+    queryset = Title.objects.all().annotate(
+        Avg("reviews__score")).order_by("name")
+    serializer_class = TitleCreateSerializer
+    permission_classes = (IsAdminUserOrReadOnly,)
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TitleFilter
+
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return TitleReadSerializer
+        return TitleWriteSerializer
+
+
 class TitleViewSet(viewsets.ModelViewSet):
     """Получить список всех объектов без токена."""
-    queryset = Title.objects.all()
+    queryset = Title.objects.all().annotate(
+        Avg("reviews__score")).order_by("name")
+    serializer_class = TitleCreateSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
-    filter_backends = (DjangoFilterBackend, )
+    filter_backends = [DjangoFilterBackend]
     filterset_class = TitleFilter
-    pagination_class = LimitOffsetPagination
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
