@@ -2,6 +2,9 @@ from rest_framework import serializers, status
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from reviews.models import Category, Comment, Genre, Review, Title
+from django.core.validators import MaxValueValidator, MinValueValidator
+from rest_framework.serializers import IntegerField
+
 
 User = get_user_model()
 
@@ -66,12 +69,12 @@ class SignUpSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'username']
 
-        def validate(self, username):
-            if username == 'me':
-                raise serializers.ValidationError(
-                    'Username unavailable'
-                )
-            return username
+    def validate_username(self, value):
+        if value == 'me':
+            raise serializers.ValidationError(
+                'Имя пользователя "me" запрещено.'
+            )
+        return value
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -113,7 +116,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
         many=True
     )
     rating = serializers.IntegerField(
-        read_only=True,
+         source='reviews__score__avg', read_only=True
     )
 
     class Meta:
@@ -147,6 +150,10 @@ class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         slug_field='username',
         read_only=True,
+    )
+
+    score = IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(10)]
     )
 
     def validate(self, data):
