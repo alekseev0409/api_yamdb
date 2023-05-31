@@ -1,10 +1,8 @@
-from rest_framework.generics import CreateAPIView
 from rest_framework import permissions
 from django.db.models import Avg
 from rest_framework.response import Response
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Avg
 from .serializers import (TokenSerializer,
                           UserSerializer,
                           SignUpSerializer,
@@ -19,14 +17,14 @@ from .serializers import (TokenSerializer,
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
-from .utils import create_token, new_code, send_message
-from rest_framework import (viewsets, filters, permissions, filters,status)
-from .permissions import IsOwnerOrReader, IsAdmin,  IsModerator, IsAdminUserOrReadOnly, IsAdminPermission
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
+from .utils import new_code, send_message
+from rest_framework import (viewsets, filters, status)
+from .permissions import (IsModerator,
+                          IsAdminUserOrReadOnly, IsAdminPermission)
+from rest_framework.permissions import AllowAny
 from rest_framework.pagination import LimitOffsetPagination
 from reviews.models import Category, Genre, Review, Title
 from .mixins import ModelMixinSet
-from rest_framework import viewsets
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.views import APIView
 from rest_framework.exceptions import ValidationError
@@ -83,7 +81,9 @@ class SignUpView(APIView):
     def post(self, request, *args, **kwargs):
         user = None
         if 'username' in request.data:
-            user = User.objects.filter(username=request.data["username"]).first()
+            user = User.objects.filter(
+                username=request.data["username"]
+                ).first()
         if not user:
             serializer = SignUpSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -121,8 +121,9 @@ class GenreViewSet(ModelMixinSet):
 
 
 class RatingViewSet(ModelMixinSet):
-    queryset = Title.objects.all().annotate(
-        Avg("reviews__score") ).order_by("name")
+    queryset = Title.objects.all().annotate(Avg("reviews__score")).order_by(
+        "name"
+        )
     serializer_class = TitleCreateSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
     filter_backends = [DjangoFilterBackend]
@@ -136,7 +137,9 @@ class RatingViewSet(ModelMixinSet):
 
 class TitleViewSet(viewsets.ModelViewSet):
     """Получить список всех объектов без токена."""
-    queryset = Title.objects.all().annotate(Avg("reviews__score") ).order_by("name")
+    queryset = Title.objects.all().annotate(Avg("reviews__score")).order_by(
+        "name"
+        )
     serializer_class = TitleCreateSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
     filter_backends = [DjangoFilterBackend]
@@ -146,6 +149,7 @@ class TitleViewSet(viewsets.ModelViewSet):
         if self.action in ('list', 'retrieve'):
             return TitleReadSerializer
         return TitleWriteSerializer
+
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer

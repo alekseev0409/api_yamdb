@@ -1,5 +1,4 @@
-from rest_framework import serializers, status
-from django.shortcuts import get_object_or_404
+from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from reviews.models import Category, Comment, Genre, Review, Title
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -18,7 +17,7 @@ class TokenSerializer(serializers.ModelSerializer):
         fields = ('username', 'confirmation_code')
 
     def validate(self, data):
-        user = get_object_or_404(User, username=data['username'])
+        # user = get_object_or_404(User, username=data['username'])
         return data
 
 
@@ -169,7 +168,8 @@ class ReviewSerializer(serializers.ModelSerializer):
                     'Отзыв уже существует'
                 )
             if 0 > score > 10:
-                raise serializers.ValidationError('Оценка меньше 0 или больше 10')
+                raise serializers.ValidationError('Оценка меньше 0 '
+                                                  'или больше 10')
         return data
 
     class Meta:

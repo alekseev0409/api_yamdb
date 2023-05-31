@@ -29,10 +29,11 @@ class User(AbstractUser):
         unique=True,
         null=False,
     )
+
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-    
+
     @property
     def is_admin(self):
         return self.is_staff or self.role == User.admin
