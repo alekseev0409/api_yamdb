@@ -115,7 +115,8 @@ class TitleReadSerializer(serializers.ModelSerializer):
         many=True
     )
     rating = serializers.IntegerField(
-         source='reviews__score__avg', read_only=True
+        source='reviews__score__avg',
+        read_only=True
     )
 
     class Meta:
