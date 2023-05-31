@@ -83,7 +83,7 @@ class SignUpView(APIView):
         if 'username' in request.data:
             user = User.objects.filter(
                 username=request.data["username"]
-                ).first()
+            ).first()
         if not user:
             serializer = SignUpSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -123,7 +123,7 @@ class GenreViewSet(ModelMixinSet):
 class RatingViewSet(ModelMixinSet):
     queryset = Title.objects.all().annotate(Avg("reviews__score")).order_by(
         "name"
-        )
+    )
     serializer_class = TitleCreateSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
     filter_backends = [DjangoFilterBackend]
@@ -139,7 +139,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     """Получить список всех объектов без токена."""
     queryset = Title.objects.all().annotate(Avg("reviews__score")).order_by(
         "name"
-        )
+    )
     serializer_class = TitleCreateSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
     filter_backends = [DjangoFilterBackend]
