@@ -33,7 +33,7 @@ class Title(models.Model):
     name = models.CharField(
         max_length=128
     )
-    year = models.IntegerField()
+    year = models.PositiveSmallIntegerField()
     description = models.TextField(
         max_length=256,
         blank=True,
@@ -70,8 +70,13 @@ class Review(models.Model):
         on_delete=models.CASCADE,
         related_name='reviews'
     )
-    score = models.IntegerField(default=0, validators=[MinValueValidator(1),
-                                MaxValueValidator(10)])
+    score = models.PositiveSmallIntegerField(
+        default=0,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(10)
+        ]
+    )
 
     class Meta:
         ordering = ('-pub_date',)

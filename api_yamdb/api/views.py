@@ -12,7 +12,6 @@ from .serializers import (TokenSerializer,
                           ReviewSerializer,
                           TitleCreateSerializer,
                           TitleReadSerializer,
-                          TitleWriteSerializer,
                           UserCreateSerializer)
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
@@ -120,20 +119,6 @@ class GenreViewSet(ModelMixinSet):
     pagination_class = PageNumberPagination
 
 
-class RatingViewSet(ModelMixinSet):
-    queryset = Title.objects.all().annotate(Avg("reviews__score")).order_by(
-        "name"
-    )
-    serializer_class = TitleCreateSerializer
-    permission_classes = (IsAdminUserOrReadOnly,)
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = TitleFilter
-
-    def get_serializer_class(self):
-        if self.action in ('list', 'retrieve'):
-            return TitleReadSerializer
-        return TitleWriteSerializer
-
 
 class TitleViewSet(viewsets.ModelViewSet):
     """Получить список всех объектов без токена."""
@@ -148,7 +133,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return TitleReadSerializer
-        return TitleWriteSerializer
+        return TitleCreateSerializer
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -176,7 +161,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         review_id = int(self.kwargs.get('review_id'))
-        review = get_object_or_404(Review, id=review_id)
+        review = get_object_or_404(Review.objects.prefetch_related('comments'), id=review_id)
         return review.comments.all()
 
     def get_permissions(self):

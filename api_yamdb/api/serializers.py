@@ -3,7 +3,8 @@ from django.contrib.auth import get_user_model
 from reviews.models import Category, Comment, Genre, Review, Title
 from django.core.validators import MaxValueValidator, MinValueValidator
 from rest_framework.serializers import IntegerField
-
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 User = get_user_model()
 
@@ -15,10 +16,6 @@ class TokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'confirmation_code')
-
-    def validate(self, data):
-        # user = get_object_or_404(User, username=data['username'])
-        return data
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -60,6 +57,13 @@ class UserCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Имя пользователя "me" запрещено.'
             )
+        return value
+
+    def validate_email(self, value):
+        try:
+            validate_email(value)
+        except ValidationError:
+            raise serializers.ValidationError('Некорректный email-адрес')
         return value
 
 
@@ -124,22 +128,6 @@ class TitleReadSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class TitleWriteSerializer(serializers.ModelSerializer):
-    category = serializers.SlugRelatedField(
-        queryset=Category.objects.all(),
-        slug_field='slug'
-    )
-    genre = serializers.SlugRelatedField(
-        queryset=Genre.objects.all(),
-        slug_field='slug',
-        many=True
-    )
-
-    class Meta:
-        fields = '__all__'
-        model = Title
-
-
 class ReviewSerializer(serializers.ModelSerializer):
 
     title = serializers.SlugRelatedField(
@@ -168,8 +156,8 @@ class ReviewSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Отзыв уже существует'
                 )
-            if 0 > score > 10:
-                raise serializers.ValidationError('Оценка меньше 0 '
+            if 0 == score > 10:
+                raise serializers.ValidationError('Оценка 0 '
                                                   'или больше 10')
         return data
 

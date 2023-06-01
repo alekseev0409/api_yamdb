@@ -21,8 +21,8 @@ class User(AbstractUser):
         verbose_name='Роль'
     )
 
-    confirmation_code = models.TextField(max_length=16, null=True,)
-    author = models.TextField(max_length=16, null=True,)
+    confirmation_code = models.CharField(max_length=16, null=True,)
+    author = models.CharField(max_length=16, null=True,)
 
     email = models.EmailField(
         max_length=254,
@@ -41,3 +41,6 @@ class User(AbstractUser):
     @property
     def is_moderator(self):
         return self.role == User.moderator
+
+    def __str__(self) -> str:
+        return self.text
