@@ -119,7 +119,6 @@ class GenreViewSet(ModelMixinSet):
     pagination_class = PageNumberPagination
 
 
-
 class TitleViewSet(viewsets.ModelViewSet):
     """Получить список всех объектов без токена."""
     queryset = Title.objects.all().annotate(Avg("reviews__score")).order_by(
@@ -161,7 +160,8 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         review_id = int(self.kwargs.get('review_id'))
-        review = get_object_or_404(Review.objects.prefetch_related('comments'), id=review_id)
+        review = get_object_or_404(
+            Review.objects.prefetch_related('comments'), id=review_id)
         return review.comments.all()
 
     def get_permissions(self):
