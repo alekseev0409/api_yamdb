@@ -5,11 +5,12 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from rest_framework.serializers import IntegerField
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-
+import re
 User = get_user_model()
 
 
 class TokenSerializer(serializers.ModelSerializer):
+    """Сериализация токена."""
     username = serializers.CharField(required=True)
     confirmation_code = serializers.CharField(required=True)
 
@@ -19,6 +20,7 @@ class TokenSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """Сериализация пользователя."""
     class Meta:
         model = User
         fields = [
@@ -32,6 +34,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор для создания нового пользователя."""
     username = serializers.RegexField(
         regex=r'^[\w.@+-]+$',
         max_length=150,
@@ -57,17 +60,23 @@ class UserCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Имя пользователя "me" запрещено.'
             )
+        if not re.match(r'^[\w.@+-]+$', value):
+            raise serializers.ValidationError(
+                'Некорректное имя пользователя.'
+            )
         return value
 
     def validate_email(self, value):
-        try:
-            validate_email(value)
-        except ValidationError:
-            raise serializers.ValidationError('Некорректный email-адрес')
+        if not re.match(r'^[\w.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$', value):
+            invalid_chars = re.findall(r'[^\w.%+-@]+', value)
+            raise serializers.ValidationError(
+                f'Некорректный email-адрес. Символы {", ".join(invalid_chars)} не допускаются.'
+            )
         return value
 
 
 class SignUpSerializer(serializers.ModelSerializer):
+    """Сериализатор для регистрации нового пользователя."""
     class Meta:
         model = User
         fields = ['email', 'username']
@@ -81,6 +90,7 @@ class SignUpSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    """Сериализтор для категорий."""
     class Meta:
         fields = ('name', 'slug')
         model = Category
@@ -88,13 +98,14 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class GenreSerializer(serializers.ModelSerializer):
-
+    """Сериализатор для жанров."""
     class Meta:
         fields = ('name', 'slug')
         model = Genre
 
 
 class TitleCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор для произведений."""
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(),
         slug_field='slug'
@@ -111,6 +122,7 @@ class TitleCreateSerializer(serializers.ModelSerializer):
 
 
 class TitleReadSerializer(serializers.ModelSerializer):
+    """Сериализатор для чтения информации о произведение."""
     category = CategorySerializer(
         read_only=True
     )
@@ -129,7 +141,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-
+    """Сериализатор для отзывов."""
     title = serializers.SlugRelatedField(
         slug_field='name',
         read_only=True,
@@ -167,6 +179,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    """Сериализатор для комментариев."""
     review = serializers.SlugRelatedField(
         slug_field='text',
         read_only=True

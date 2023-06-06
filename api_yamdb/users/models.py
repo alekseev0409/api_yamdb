@@ -3,6 +3,7 @@ from django.db import models
 
 
 class User(AbstractUser):
+    """Модель пользователя."""
     admin = 'admin'
     user = 'user'
     moderator = 'moderator'
@@ -43,4 +44,4 @@ class User(AbstractUser):
         return self.role == User.moderator
 
     def __str__(self) -> str:
-        return self.text
+        return self.email
