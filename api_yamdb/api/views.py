@@ -128,8 +128,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     """Получить список всех объектов без токена."""
     queryset = Title.objects.all().annotate(Avg("reviews__score"
                                                 )).prefetch_related(
-                                                    'category', 'genre'
-                                                )
+                                                    'category', 'genre')
     serializer_class = TitleCreateSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
     filter_backends = [DjangoFilterBackend]
