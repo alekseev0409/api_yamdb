@@ -3,8 +3,6 @@ from django.contrib.auth import get_user_model
 from reviews.models import Category, Comment, Genre, Review, Title
 from django.core.validators import MaxValueValidator, MinValueValidator
 from rest_framework.serializers import IntegerField
-from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
 import re
 User = get_user_model()
 
@@ -70,7 +68,8 @@ class UserCreateSerializer(serializers.ModelSerializer):
         if not re.match(r'^[\w.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$', value):
             invalid_chars = re.findall(r'[^\w.%+-@]+', value)
             raise serializers.ValidationError(
-                f'Некорректный email-адрес. Символы {", ".join(invalid_chars)} не допускаются.'
+                f'Некорректный email-адрес. Символы'
+                f'{", ".join(invalid_chars)} не допускаются.'
             )
         return value
 
@@ -168,8 +167,8 @@ class ReviewSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Отзыв уже существует'
                 )
-            if 0 == score > 10:
-                raise serializers.ValidationError('Оценка 0 '
+            if 10 < score < 0:
+                raise serializers.ValidationError('Оценка меньше 0 '
                                                   'или больше 10')
         return data
 
