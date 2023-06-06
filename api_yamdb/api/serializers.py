@@ -1,9 +1,11 @@
 from rest_framework import serializers
+
 from django.contrib.auth import get_user_model
 from reviews.models import Category, Comment, Genre, Review, Title
 from django.core.validators import MaxValueValidator, MinValueValidator
 from rest_framework.serializers import IntegerField
 import re
+
 User = get_user_model()
 
 
